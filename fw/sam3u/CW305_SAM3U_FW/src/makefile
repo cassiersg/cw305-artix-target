@@ -37,6 +37,7 @@ TARGET = ChipWhisperer-CW305
 SRC += main_cw305.c naeusb/usb_xmem.c naeusb/fpga_program.c naeusb/V2Protocol.c naeusb/V2ProtocolParams.c 
 SRC += cdce906.c naeusb/fpga_program.c fpgaspi_program.c fpgautil_io.c tps56520.c ui_cw305.c
 SRC += naeusb/XMEGANVM.c naeusb/XPROGNewAE.c naeusb/XPROGTarget.c
+SRC += naeusb/CETimer.c naeusb/srsw.c execution.c
 SRC += naeusb/XPROGTimeout.c naeusb/circbuffer.c tasks.c
 SRC += naeusb/naeusb.c naeusb/naeusb_default.c naeusb/naeusb_fpga_target.c naeusb/udc.c 
 LINKERFILE = naeusb/flash_sam3u4.ld

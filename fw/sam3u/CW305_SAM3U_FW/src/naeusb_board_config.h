@@ -177,6 +177,15 @@
 #define FPGA_TRIGGER_GPIO	(PIO_PB17_IDX)
 #define FPGA_TRIGGER_FLAGS	(PIO_TYPE_PIO_OUTPUT_0 | PIO_DEFAULT)
 
+#define FPGA_RESET_GPIO     (PIO_PB18_IDX)
+#define FPGA_RESET_FLAGS	(PIO_TYPE_PIO_OUTPUT_1 | PIO_DEFAULT)  /* reset is low active */
+
+#define FPGA_BUSY_GPIO      (PIO_PB22_IDX)
+#define FPGA_BUSY_PIO       PIOB
+#define FPGA_BUSY_ID        ID_PIOB
+#define FPGA_BUSY_MASK      (PIO_PB22)
+#define FPGA_BUSY_ATTR      (PIO_IT_FALL_EDGE) //PIO_PULLUP | PIO_DEBOUNCE |
+
 //! LED #0 pin definition
 #define LED_0_NAME    "red LED1"
 #define LED0_GPIO     (PIO_PC15_IDX)

@@ -30,7 +30,8 @@
 #include "naeusb_fpga_target.h"
 #include "cdce906.h"
 #include <string.h>
-
+#include "CETimer.h"
+#include "execution.h"
 
 //Serial Number - will be read by device ID
 char usb_serial_number[33] = "000000000000DEADBEEF";
@@ -52,8 +53,8 @@ static void configure_console(void);
 void fpga_pins(bool enabled)
 {
 	
-	gpio_configure_pin(PIO_PB22_IDX, PIO_OUTPUT_0);
-	gpio_configure_pin(PIO_PB18_IDX, PIO_OUTPUT_0);
+	//gpio_configure_pin(PIO_PB22_IDX, PIO_OUTPUT_0); // now FPGA_BUSY_GPIO and an input
+	gpio_configure_pin(PIO_PB18_IDX, PIO_OUTPUT_0); // low active reset
 	gpio_configure_pin(PIN_FPGA_DONE_GPIO, PIN_FPGA_DONE_FLAGS);
 	
 	if (enabled){
@@ -114,13 +115,21 @@ void fpga_pins(bool enabled)
 			
 		//Force FPGA trigger
 		gpio_configure_pin(FPGA_TRIGGER_GPIO, FPGA_TRIGGER_FLAGS);
-		
+
+		//remove RESET
+		gpio_configure_pin(FPGA_RESET_GPIO, FPGA_RESET_FLAGS);
+
+		//configure FPGA Busy as input
+		//gpio_configure_pin(FPGA_BUSY_GPIO, PIO_INPUT);
+
 		gpio_configure_pin(PIN_FPGA_PROGRAM_GPIO, PIN_FPGA_PROGRAM_FLAGS);
-		
+
 		gpio_configure_pin(SPI_MISO_GPIO, SPI_MISO_FLAGS);
 		gpio_configure_pin(SPI_MOSI_GPIO, SPI_MOSI_FLAGS);
 		gpio_configure_pin(SPI_SPCK_GPIO, SPI_SPCK_FLAGS);
-		
+
+		//pio_enable_interrupt(FPGA_BUSY_PIO, FPGA_BUSY_MASK);
+
 	} else {
 		#ifdef CONF_BOARD_PCK0
 		gpio_configure_pin(PIN_PCK0, PIO_INPUT);
@@ -173,12 +182,20 @@ void fpga_pins(bool enabled)
 		
 		//Force FPGA trigger
 		gpio_configure_pin(FPGA_TRIGGER_GPIO, PIO_INPUT);
+
+		//remove RESET
+		gpio_configure_pin(FPGA_RESET_GPIO, FPGA_RESET_FLAGS);
+
+		//configure FPGA Busy as input
+		//gpio_configure_pin(FPGA_BUSY_GPIO, PIO_INPUT);
 		
 		gpio_configure_pin(PIN_FPGA_PROGRAM_GPIO, PIO_INPUT);
 		
 		gpio_configure_pin(SPI_MISO_GPIO, PIO_INPUT);
 		gpio_configure_pin(SPI_MOSI_GPIO, PIO_INPUT);
 		gpio_configure_pin(SPI_SPCK_GPIO, PIO_INPUT);
+
+		//pio_disable_interrupt(FPGA_BUSY_PIO, FPGA_BUSY_MASK);
 	}
 	
 }
@@ -224,6 +241,15 @@ int main(void)
 
 	/* Enable SMC */
 	pmc_enable_periph_clk(ID_SMC);	
+
+	/* Configure FPGA BUSY Interrupt */
+	pmc_enable_periph_clk(FPGA_BUSY_ID);
+	pio_handler_set(FPGA_BUSY_PIO, FPGA_BUSY_ID, FPGA_BUSY_MASK, FPGA_BUSY_ATTR, BUSY_ISR);
+	irq_register_handler(FPGA_BUSY_ID,3)         // configures IO Port B interrupt, with priority 3
+	//NVIC_SetPriority((IRQn_Type) FPGA_BUSY_ID, 3);
+	//NVIC_EnableIRQ((IRQn_Type)FPGA_BUSY_ID);
+	//pio_enable_interrupt(FPGA_BUSY_PIO, FPGA_BUSY_MASK);
+
 	fpga_pins(true);
 	
 	/* Configure EBI I/O for PSRAM connection */
@@ -264,10 +290,32 @@ int main(void)
 	// because the USB management is done by interrupt
 	
 	naeusb_register_handlers();
-    fpga_target_register_handlers();
+  fpga_target_register_handlers();
+
+	//initialize CE mode
+	exec_init();
+	exstate.configured = false;
+
 	while (true) {
 		// sleepmgr_enter_sleep();
-		process_events();
+		// if(status_CE_timer()){
+		// 	// timer is running
+		// 	exstate.state = WAIT_FOR_BUSY;
+		// 	exstate.reset_exec = false;
+		// 	while(!CORE_BUSY());
+		// 	exstate.busy_flag = true;
+		// 	// prepare next TV
+		// 	exstate.state = PREPARE_NEXT_TV;
+		// 	// wait for FPGA to complete execution
+		// 	exstate.state = WAIT_FOR_DONE;
+		// 	while(CORE_BUSY());
+		// 	gpio_set_pin_low(FPGA_RESET_GPIO); // low active
+		// 	// get results
+		// 	exstate.exec_cnt++;
+		// } else {
+			process_events(); // never runs do_task but I keep it for now
+		//}
+
 	}
 }
 

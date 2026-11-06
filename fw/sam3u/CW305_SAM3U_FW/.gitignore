@@ -1,0 +1,9 @@
+src/.dep
+src/obj
+src/*.eep
+src/*.elf
+src/*.hex
+src/*.lss
+src/*.map
+src/*.sym
+src/symbols.txt
